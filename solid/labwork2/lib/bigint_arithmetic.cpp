@@ -1,0 +1,80 @@
+#include "bigint_arithmetic.h"
+
+uint2022_t BigIntArithmetic::add(const uint2022_t& a, const uint2022_t& b) {
+    uint2022_t r;
+    uint64_t carry = 0;
+    for (int i = 0; i < uint2022_t::SIZE; ++i) {
+        uint64_t t = (uint64_t)a.data[i] + b.data[i] + carry;
+        r.data[i] = uint32_t(t);
+        carry = t >> 32;
+    }
+    return r;
+}
+
+uint2022_t BigIntArithmetic::sub(const uint2022_t& a, const uint2022_t& b) {
+    uint2022_t r;
+    int64_t borrow = 0;
+    for (int i = 0; i < uint2022_t::SIZE; ++i) {
+        int64_t t = (int64_t)a.data[i] - b.data[i] - borrow;
+        if (t < 0) {
+            t += (1LL << 32);
+            borrow = 1;
+        } else {
+            borrow = 0;
+        }
+        r.data[i] = uint32_t(t);
+    }
+    return r;
+}
+
+uint2022_t BigIntArithmetic::mul(const uint2022_t& a, const uint2022_t& b) {
+    uint2022_t r;
+    for (int i = 0; i < uint2022_t::SIZE; ++i) {
+        uint64_t carry = 0;
+        for (int j = 0; j + i < uint2022_t::SIZE; ++j) {
+            uint64_t t = (uint64_t)a.data[i] * b.data[j] + r.data[i + j] + carry;
+            r.data[i + j] = uint32_t(t);
+            carry = t >> 32;
+        }
+    }
+    return r;
+}
+
+uint2022_t BigIntArithmetic::div(const uint2022_t& a, const uint2022_t& b) {
+    uint2022_t zero;
+    uint2022_t one;
+    one.data[0] = 1;
+
+    uint2022_t dividend = a;
+    uint2022_t divisor  = b;
+    uint2022_t q;
+
+    if (eq(divisor, zero)) {
+        return q;
+    }
+
+    while (!lt(dividend, divisor)) {
+        dividend = sub(dividend, divisor);
+        q = add(q, one);
+    }
+    return q;
+}
+
+bool BigIntArithmetic::eq(const uint2022_t& a, const uint2022_t& b) {
+    for (int i = 0; i < uint2022_t::SIZE; ++i) {
+        if (a.data[i] != b.data[i]) return false;
+    }
+    return true;
+}
+
+bool BigIntArithmetic::neq(const uint2022_t& a, const uint2022_t& b) {
+    return !eq(a, b);
+}
+
+bool BigIntArithmetic::lt(const uint2022_t& a, const uint2022_t& b) {
+    for (int i = uint2022_t::SIZE - 1; i >= 0; --i) {
+        if (a.data[i] < b.data[i]) return true;
+        if (a.data[i] > b.data[i]) return false;
+    }
+    return false;
+}
